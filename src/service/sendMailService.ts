@@ -45,7 +45,6 @@ const transporter = nodemailer.createTransport({
   const receiveMessagesFromQueue = async () => {
     const receiveParams = {
       QueueUrl: process.env.AWS_QUEUE_URL!,
-      MaxNumberOfMessages: 100,
       VisibilityTimeout: 30,
     };
   
