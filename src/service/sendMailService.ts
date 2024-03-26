@@ -5,7 +5,10 @@ import type { EmailJob } from "../models/emailJob";
 interface sistemas {GTF: string; SMEDS: string; ABRANGE: string;}
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    pool: true,
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_ADDRESS,
       pass: process.env.EMAIL_PASSWORD,
@@ -14,13 +17,17 @@ const transporter = nodemailer.createTransport({
   
   const sendEmailFromQueue = async (email: EmailJob) => {
 
+    let emailAdressAlias = process.env.EMAIL_ADDRESS;
+
     const sistemas: sistemas = {
       GTF: "@sistemagtf.com.br",
       SMEDS: "@smeds.com.br",
       ABRANGE: "@abrange.app"
-  }
+    }
 
-  const emailAdressAlias = 'informativo' + sistemas[email.sistema as keyof sistemas]
+    if(email.sistema){
+      emailAdressAlias = 'informativo' + sistemas[email.sistema as keyof sistemas]
+    }   
 
     const mailOptions = {
       from: emailAdressAlias,
@@ -49,20 +56,24 @@ const transporter = nodemailer.createTransport({
     };
   
     try {
-      const data = await sqs.receiveMessage(receiveParams).promise();
+      const data = await sqs.receiveMessage(receiveParams).promise(); 
+      
+      console.log(data.Messages);
+
+      if (data.Messages!.length > 0) {
+        data.Messages!.forEach(async (message) => {
+          if(message.Body && message.Body != "null"){
+            const emailData = JSON.parse(message.Body);
   
-      if (data.Messages) {
-        data.Messages.forEach(async (message) => {
-          const emailData = JSON.parse(message.Body!);
-  
-          await sendEmailFromQueue(emailData);
-  
-          const deleteParams = {
-            QueueUrl: process.env.AWS_QUEUE_URL!,
-            ReceiptHandle: message.ReceiptHandle!,
-          };
-  
-          await sqs.deleteMessage(deleteParams).promise();
+            await sendEmailFromQueue(emailData);
+    
+            const deleteParams = {
+              QueueUrl: process.env.AWS_QUEUE_URL!,
+              ReceiptHandle: message.ReceiptHandle!,
+            };
+    
+            await sqs.deleteMessage(deleteParams).promise();
+          }          
         });
       } else {
         console.log('Não há mensagens na fila para processar.');
