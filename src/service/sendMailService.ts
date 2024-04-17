@@ -2,7 +2,7 @@ import sqs from "../config/awsSQS";
 import nodemailer from 'nodemailer';
 import type { EmailJob } from "../models/emailJob";
 
-interface sistemas {GTF: string; SMEDS: string; ABRANGE: string;}
+interface sistemas {GTF: string; ABRANGE: string;}
 
 const transporter = nodemailer.createTransport({
     pool: true,
@@ -20,8 +20,7 @@ const transporter = nodemailer.createTransport({
     let emailAdressAlias = process.env.EMAIL_ADDRESS;
 
     const sistemas: sistemas = {
-      GTF: "@sistemagtf.com.br",
-      SMEDS: "@smeds.com.br",
+      GTF: "@sistemagtf.com.br",      
       ABRANGE: "@abrange.app"
     }
 
@@ -56,9 +55,7 @@ const transporter = nodemailer.createTransport({
     };
   
     try {
-      const data = await sqs.receiveMessage(receiveParams).promise(); 
-      
-      console.log(data.Messages);
+      const data = await sqs.receiveMessage(receiveParams).promise();       
 
       if (data.Messages!.length > 0) {
         data.Messages!.forEach(async (message) => {
@@ -75,9 +72,7 @@ const transporter = nodemailer.createTransport({
             await sqs.deleteMessage(deleteParams).promise();
           }          
         });
-      } else {
-        console.log('Não há mensagens na fila para processar.');
-      }
+      } 
     } catch (error) {
       console.error('Error receiving messages from queue:', error);
     }
